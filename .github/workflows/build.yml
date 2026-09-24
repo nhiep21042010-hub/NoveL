@@ -1,0 +1,39 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lay ma nguon
+        uses: actions/checkout@v4
+
+      - name: Cai JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Tim thu muc du an
+        id: find
+        run: |
+          G=$(find . -name gradlew -not -path './.git/*' | head -n 1)
+          echo "dir=$(dirname "$G")" >> "$GITHUB_OUTPUT"
+          echo "Du an nam o: $(dirname "$G")"
+
+      - name: Build
+        working-directory: ${{ steps.find.outputs.dir }}
+        run: |
+          chmod +x gradlew
+          ./gradlew build --no-daemon -Dorg.gradle.jvmargs=-Xmx3G
+
+      - name: Tai file jar len Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bbs-fs-jar
+          path: ${{ steps.find.outputs.dir }}/build/libs/*.jar
